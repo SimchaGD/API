@@ -7,7 +7,7 @@ import os
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-
+import json
 
 app = Flask(__name__)
 api = Api(app)
@@ -23,9 +23,9 @@ class ReadFile(Resource):
         registrate_call(username)
 
         # read in file
-        with open("api_test.csv", "r") as f:
-            csvFile = f.read()
-        return csvFile
+        with open("data.json", "r") as f:
+            data = f.read()
+        return json.loads(data)
 
 # We want to registrate every api call
 def registrate_call(usrname):
@@ -113,13 +113,45 @@ class RegisterUser(Resource):
             df = pd.concat([df, df_add], sort = False)
             df.to_csv("user_info.csv", sep = ";", index = False)
 
-            return "succesfully registered: {}".format(username)
+            return "Succesfully registered: {}".format(username)
 
         else:
             return "Password 1 and password 2 must be the same"
-
+             
+class RemoveUser(Resource):
+    def get(self, username, password):
+        # check password
+        if not check_password(username, password):
+            return "User not recognized."
+        
+        df = pd.read_csv("user_info.csv", sep = ";")
+        userIndex = df[df.user == username].index
+        df = df.drop(userIndex)
+        df.to_csv("user_info.csv", sep = ";", index = False)
+        
+        return "{} is succesfully deleted".format(username)
+    
+class ChangePassword(Resource):
+    def get(self, username, password, new_password1, new_password2):
+        # check password
+        if not check_password(username, password):
+            return "User not recognized."
+        
+        RM = RemoveUser()
+        RM.get(username, password)
+        
+        RU = RegisterUser()
+        resp = RU.get(username, new_password1, new_password2)
+        
+        if resp[:4] == "Pass":
+            return resp
+        else:
+            return "Succesfully changed passwords"
+        
 api.add_resource(ReadFile, "/<username>/<password>")
 api.add_resource(RegisterUser, "/register/<username>/<password1>/<password2>")
+api.add_resource(RemoveUser, "/unregister/<username>/<password>")
+api.add_resource(ChangePassword, "/change/<username>/<password>/<new_password1>/<new_password2>")
 
 if __name__ == "__main__":
     app.run(debug=True)

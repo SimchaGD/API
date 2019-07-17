@@ -113,11 +113,11 @@ class RegisterUser(Resource):
             df = pd.concat([df, df_add], sort = False)
             df.to_csv("user_info.csv", sep = ";", index = False)
 
-            return "Succesfully registered: {}".format(username)
+            return "succesfully registered: {}".format(username)
 
         else:
             return "Password 1 and password 2 must be the same"
-             
+
 class RemoveUser(Resource):
     def get(self, username, password):
         # check password
